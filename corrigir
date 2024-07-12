@@ -1,0 +1,110 @@
+import pandas as pd
+import re
+import smtplib
+import openpyxl
+import email
+from email.message import EmailMessage
+from time import sleep
+
+
+class projeto_final:
+    def iniciar(self):
+        self.lista_tarefas = []
+        self.email_destino()
+        self.menu()
+        self.criar_planilha ()
+        sleep(2)
+        self.enviar_email()
+    
+    def email_destino(self):
+        while True:
+            self.email = input('Email de destino: ').lower()
+
+            email_padrao = re.search(
+            '^[a-z0-9_.-]+@[a-z0-9]+.[a-z]+(.[a-z]+)?$', self.email
+            )
+            if email_padrao:
+                print('Email Válido!')
+                break
+            else:
+                print('Email inválido!')
+
+    def menu(self):
+        while True:
+            menu_principal = int(input('''
+            [1] Cadastrar
+            [2] Visualizar
+            [3] Sair
+            Opção: '''))
+
+            match menu_principal:
+                case 1 : self.cadastrar ()
+                case 2 : self.visualizar ()
+                case 3 : break
+                case _: print('Opção Inválida')
+
+    def cadastrar(self):
+        while True:
+            tarefa = input('Tarefa ou s para sair: ').capitalize()
+            if tarefa == 'S':
+                break
+            else:
+                self.lista_tarefas.append(tarefa)
+
+                try:
+                    with open('Tarefas/histórico.txt', 'a', encoding='utf8') as arquivo:
+                        arquivo.write(f'{tarefa} \n')
+                except FileNotFoundError:
+                    print('Caminho do arquivo está errado...')
+
+    def visualizar(self):
+        try:    
+            with open('Tarefas/histórico.txt', 'r', encoding='utf8') as arquivo:
+                print(arquivo.read())
+
+        except FileNotFoundError:
+            print('Caminho parece estar errado ...')
+
+    def criar_planilha(self):
+        if len(self.lista_tarefas) > 0:
+            try:
+                df = pd.DataFrame({'Tarefas': self.lista_tarefas})
+                nome_arquivo = input('Nome do arquivo (sem xlsx): ')
+                df.to_excel(f'Tarefas/{nome_arquivo}.xlsx', index=False)
+                print('Planilha foi criada...')
+
+            except Exception:
+                print('Algo errado ao criar a planilha...')
+
+    def enviar_email(self):
+        endereco ='janarciso.silva@gmail.com'
+        senha = 'czkd yjcg ybae ruvm'
+
+        msg = EmailMessage()
+        msg ['From'] = endereco
+        msg['To'] = self.email
+        msg['Subject'] = 'planilha do dia'
+        msg.set_content(
+            'Planilha chegou Jana, egue o relatório'
+        )
+
+        arquivos = [f'Tarefas/{self.nome_arquivo}.xlsx']
+
+        for a in arquivos:
+            with open(arquivos , 'rb') as arq:
+                dados = arq.read()
+                nome_arquivo = arq.name
+
+            msg.add_attachment(
+                dados,
+                maintype = 'application',
+                subtype = 'octet-stream',
+                filename = nome_arquivo
+            )
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login( endereco, senha, initial_response_ok=True)
+        server.send_message(msg)
+
+
+start = projeto_final()
+start.iniciar()
